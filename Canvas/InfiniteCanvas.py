@@ -79,11 +79,18 @@ class InfiniteCanvas(tk.Frame):
             self.canvas.config(yscrollincrement=0, xscrollincrement=0)
 
     def __handle_zoom(self, event):
+        """
+        Handles zoom related events.
+
+        :param event: The tkinter event.
+        :return:
+        """
         if self.mode == "zoom":
-            scale_factor = 1.001 ** event.delta
+            scale_factor = 1.001 ** event.delta     # The amount to scale by
+
+            # Scale the page and set the scroll region to within the bbox
             self.canvas.scale(tk.ALL, event.x, event.y, scale_factor, scale_factor)
-            bbox = self.canvas.bbox(tk.ALL)
-            self.canvas.config(scrollregion=(bbox[0], bbox[1], bbox[2], bbox[3]))
+            self.canvas.config(scrollregion=self.canvas.bbox(tk.ALL))
 
     # ------------------------- Mode Events ----------------------------- #
     def __in_default_mode(self):
