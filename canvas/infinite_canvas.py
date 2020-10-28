@@ -26,7 +26,7 @@ class InfiniteCanvas(tk.Frame):
 
         # Instance data
         # Modes
-        self.mode = ""
+        self.mode = "" # Extrapolate into a class
 
         # Dragging variables
         self.drag_src_coords = (-1, -1)  # (x, y)
@@ -144,7 +144,7 @@ class InfiniteCanvas(tk.Frame):
             # Reset Zoom variables
             self.__reset_mode()
 
-    # ----------------------------------- Canvas Method ------------------------------------ #
+    # ----------------------------------- canvas Method ------------------------------------ #
     def create_canvas(self):
         """
         Create and pack the canvas.
@@ -168,7 +168,7 @@ class InfiniteCanvas(tk.Frame):
         self.canvas_xscrollbar.pack(side=tk.BOTTOM, fill=tk.X)
         self.canvas_yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # Pack Canvas
+        # Pack canvas
         self.canvas.config(xscrollcommand=self.canvas_xscrollbar.set, yscrollcommand=self.canvas_yscrollbar.set)
         self.canvas.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
         self.canvas.focus_set()
@@ -209,7 +209,4 @@ class InfiniteCanvas(tk.Frame):
 
         # Set scroll region within the confines of the grid
         self.canvas.config(scrollregion=self.canvas.bbox(tk.ALL))
-
-
-
 

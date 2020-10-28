@@ -1,5 +1,5 @@
 import tkinter as tk
-from Canvas.InfiniteCanvas import InfiniteCanvas
+from canvas.infinite_canvas import InfiniteCanvas
 
 
 def main():
