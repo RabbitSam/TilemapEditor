@@ -1,9 +1,10 @@
 import tkinter as tk
 import math
+from mode import Modes
 
 
 class InfiniteCanvas(tk.Frame):
-    def __init__(self, master=None, width: int = 50, height: int = 50):
+    def __init__(self, master=None, mode=None, width: int = 50, height: int = 50):
         """
         Initializes an infinite canvas that can be drag scrolled.
 
@@ -26,13 +27,13 @@ class InfiniteCanvas(tk.Frame):
 
         # Instance data
         # Modes
-        self.mode = "" # Extrapolate into a class
+        self.mode = mode
 
         # Dragging variables
         self.drag_src_coords = (-1, -1)  # (x, y)
 
         # Grids
-        self.grid = []
+        self.canvas_grid = []
 
         # Create canvas
         self.create_canvas()
@@ -48,7 +49,7 @@ class InfiniteCanvas(tk.Frame):
         :param event: The tkinter event.
         """
         # If the current mode is drag
-        if self.mode == "drag":
+        if self.mode == Modes.DRAG:
             # If there is no original source coordinates, set them this round and start dragging next round.
             if self.drag_src_coords == (-1, -1):
                 self.drag_src_coords = (event.x, event.y)
@@ -74,7 +75,7 @@ class InfiniteCanvas(tk.Frame):
 
         :param event: The tkinter event.
         """
-        if self.mode == "drag":
+        if self.mode == Modes.DRAG:
             self.drag_src_coords = (-1, -1)
             self.canvas.config(yscrollincrement=0, xscrollincrement=0)
 
@@ -85,7 +86,7 @@ class InfiniteCanvas(tk.Frame):
         :param event: The tkinter event.
         :return:
         """
-        if self.mode == "zoom":
+        if self.mode == Modes.ZOOM:
             scale_factor = 1.001 ** event.delta     # The amount to scale by
 
             # Scale the page and set the scroll region to within the bbox
@@ -93,13 +94,16 @@ class InfiniteCanvas(tk.Frame):
             self.canvas.config(scrollregion=self.canvas.bbox(tk.ALL))
 
     # ------------------------- Mode Events ----------------------------- #
+    # The methods below should be replaced by direct calls to the mode instance methods
+    # At the moment however, it's fine.
+    # I can fix this later.
     def __in_default_mode(self):
         """
         Checks if the mode is default.
 
         :return: Boolean indicating if the mode is default. True if default, False otherwise.
         """
-        return self.mode == ""
+        return self.mode.in_default_mode()
 
     def __set_mode(self, mode):
         """
@@ -107,14 +111,15 @@ class InfiniteCanvas(tk.Frame):
 
         :param mode: The mode to set.
         """
-        self.mode = mode
+        self.mode.set_mode(mode)
 
     def __reset_mode(self):
         """
         Reset the mode to default.
         """
-        self.mode = ""
+        self.mode.reset_mode()
 
+    # The methods below this should stay the same however.
     def __set_drag_mode(self, event):
         """
         Set Drag Mode. Used to enable and disable drag events.
@@ -123,7 +128,7 @@ class InfiniteCanvas(tk.Frame):
         """
         # Check whether to activate or deactivate the drag event
         if str(event.type) == "KeyPress" and self.__in_default_mode():
-            self.__set_mode("drag")
+            self.__set_mode(Modes.DRAG)
             self.canvas.config(cursor="fleur")
         elif str(event.type) == "KeyRelease":
             # Reset Drag variables
@@ -139,7 +144,7 @@ class InfiniteCanvas(tk.Frame):
         """
         # Check whether to activate or deactivate the zoom event
         if str(event.type) == "KeyPress" and self.__in_default_mode():
-            self.__set_mode("zoom")
+            self.__set_mode(Modes.ZOOM)
         elif str(event.type) == "KeyRelease":
             # Reset Zoom variables
             self.__reset_mode()
