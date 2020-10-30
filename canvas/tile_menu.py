@@ -1,5 +1,6 @@
 import tkinter as tk
 from PIL import ImageTk
+from mode import Modes
 
 
 class TileMenu(tk.Frame):
@@ -23,9 +24,9 @@ class TileMenu(tk.Frame):
         # Images
         self.images = []
 
-        self.create_canvas()
+        self._create_canvas()
 
-    def create_canvas(self):
+    def _create_canvas(self):
         """
         Create the  canvas and the scroll region
         """
@@ -51,13 +52,15 @@ class TileMenu(tk.Frame):
         """
         # Resize the image
         sprite.resize((self.tile_size, self.tile_size))
-        photo_image_sprite = ImageTk.PhotoImage(sprite.sprite)
+        photo_image_sprite = sprite.get_photo_image()
 
         # Create the image
-        image_id = self.canvas.create_image((0, len(self.images) * 55), image=photo_image_sprite)
+        image_id = self.canvas.create_image((0, len(self.images) * (self.tile_size + 5)), image=photo_image_sprite)
         self.canvas.images.append(photo_image_sprite)
         self.images.append((image_id, sprite))
-        print(image_id)
+
+        # Set tile click event
+        self.canvas.tag_bind(image_id, "<Button-1>", lambda _: self._set_related_item(sprite))
 
         # Set scroll region
         bbox = self.canvas.bbox(tk.ALL)
@@ -66,5 +69,16 @@ class TileMenu(tk.Frame):
         # Adjust height
         new_height = bbox[3] - bbox[1]
         self.canvas.configure(height=new_height)
+
+    def _set_related_item(self, sprite):
+        """
+        Sets the sprite as a related item for the mode.
+
+        :param sprite: The sprite to set
+        """
+        # Only if the mode is add, then set the related_item
+        if self.mode == Modes.ADD:
+            self.mode.set_related_item(sprite)
+
 
 

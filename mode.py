@@ -3,9 +3,9 @@ from enum import Enum, auto
 
 class Modes(Enum):
     DEFAULT = auto()
-    ADD = auto()
     DRAG = auto()
     ZOOM = auto()
+    ADD = auto()
 
 
 class Mode:
@@ -18,12 +18,17 @@ class Mode:
         # Might change to array or dict if needed in the future.
         self.related_item = None
 
-    def reset_mode(self):
+    # ----------------------------------------------- BUILT-INS ------------------------------------------------ #
+    def __eq__(self, other):
         """
-        Resets mode to default
-        """
-        self.mode = Modes.DEFAULT
+        If you want to check what the current mode is
 
+        :param other: The mode to check against.
+        :return: True if equal, False otherwise
+        """
+        return self.mode == other
+
+    # ------------------------------------------------ MODE METHODS -------------------------------------------- #
     def set_mode(self, mode):
         """
         Change the mode. MUST BE IN MODES ENUM.
@@ -33,14 +38,31 @@ class Mode:
         if mode in Modes:
             self.mode = mode
 
+    def reset_mode(self):
+        """
+        Resets mode to default
+        """
+        self.set_mode(Modes.DEFAULT)
+        self.reset_related_item()
+
+    def get_mode_value(self):
+        return self.mode
+
     def in_default_mode(self):
         return self.mode == Modes.DEFAULT
 
-    def __eq__(self, other):
-        """
-        If you want to check what the current mode is
+    # ------------------------------------------------ ITEM METHODS -------------------------------------------- #
+    def set_related_item(self, item):
+        self.related_item = item
 
-        :param other: The mode to check against.
-        :return: True if equal, False otherwise
-        """
-        return self.mode == other
+    def reset_related_item(self):
+        self.set_related_item(None)
+
+    def has_related_item(self):
+        return self.related_item is not None
+
+    def get_related_item(self):
+        return self.related_item
+
+
+
