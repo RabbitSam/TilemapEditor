@@ -1,7 +1,7 @@
 import tkinter as tk
 import math
 from mode import Modes
-from PIL import ImageTk
+from multiprocessing import Process
 
 
 class InfiniteCanvas(tk.Frame):
@@ -42,6 +42,13 @@ class InfiniteCanvas(tk.Frame):
         # Grids
         self._canvas_grid = []
 
+        # Tiles
+        self._tiles = []
+
+        # Maximum Thread Count
+        self._max_threads = 100
+        self._tiles_per_thread = 4
+
         # Create canvas
         self._create_canvas()
         self._create_canvas_events()
@@ -75,6 +82,9 @@ class InfiniteCanvas(tk.Frame):
                 # Set old location as the current location
                 self._drag_src_coords = (event.x, event.y)
 
+                # Generate Event
+                self.event_generate("<<zoom>>")
+
     def _handle_button_release(self, event):
         """
         Handle button release events.
@@ -96,86 +106,48 @@ class InfiniteCanvas(tk.Frame):
         if self._mode == Modes.ZOOM:
             scale_factor = 1.001 ** event.delta     # The amount to scale by
 
-            # Scale the page and set the scroll region to within the bbox
+            # Scale the page
             self._canvas.scale(tk.ALL, event.x, event.y, scale_factor, scale_factor)
+
+            # Set the scroll region to within the bbox
             self._canvas.config(scrollregion=self._canvas.bbox(tk.ALL))
 
-    # ------------------------- Mode Events ----------------------------- #
-    # The methods below should be replaced by direct calls to the mode instance methods
-    # At the moment however, it's fine.
-    # I can fix this later.
-    def _in_default_mode(self):
-        """
-        Checks if the mode is default.
+            # Resize photo images
+            self.event_generate("<<zoom>>")
 
-        :return: Boolean indicating if the mode is default. True if default, False otherwise.
+    def resize_image(self, label, sprite):
         """
-        return self._mode.in_default_mode()
+        Resizes the images
+        """
+        # Get the width and height
+        bbox = self._canvas.bbox("ref_rect")
+        width = bbox[2] - bbox[0]
+        height = bbox[3] - bbox[1]
 
-    def _set_mode(self, mode):
-        """
-        Set the mode to some other mode
+        # Resize the image only if it is viewable and if the photoimage isn't the same size
+        if label.winfo_viewable() and (label.image.width(), label.image.height()) != (width, height):
+            # Resize the sprite only once. Since each tile uses the same sprite instance.
+            if sprite.get_size() != (width, height):
+                sprite.resize((width, height))
 
-        :param mode: The mode to set.
-        """
-        self._mode.set_mode(mode)
+            # Get the photo image
+            photo_image_sprite = sprite.get_photo_image()
 
-    def _reset_mode(self):
-        """
-        Reset the mode to default.
-        """
-        self._mode.reset_mode()
-
-    # The methods below this should stay the same however.
-    def _set_drag_mode(self, event):
-        """
-        Set Drag Mode. Used to enable and disable drag events.
-
-        :param event: The tkinter event
-        """
-        # Check whether to activate or deactivate the drag event
-        if str(event.type) == "KeyPress" and self._in_default_mode():
-            self._set_mode(Modes.DRAG)
-            self._canvas.config(cursor="fleur")
-        elif str(event.type) == "KeyRelease":
-            # Reset Drag variables
-            self._reset_mode()
-            self._drag_src_coords = (-1, -1)
-            self._canvas.config(cursor="arrow")
-
-    def _set_zoom_mode(self, event):
-        """
-        Set Drag Mode. Used to enable and disable drag events.
-
-        :param event: The tkinter event
-        """
-        # Check whether to activate or deactivate the zoom event
-        if str(event.type) == "KeyPress" and self._in_default_mode():
-            self._set_mode(Modes.ZOOM)
-        elif str(event.type) == "KeyRelease":
-            # Reset Zoom variables
-            self._reset_mode()
-
-    def _set_current_mode(self, event):
-        """
-        Set the current mode
-
-        :param event: The tkinter event
-        """
-        if str(event.type) == "Enter":
-            if self._mode == Modes.ADD:
-                self._canvas.config(cursor="cross")
-        elif str(event.type) == "Leave":
-            self._canvas.config(cursor="arrow")
+            # Replace the image
+            label.configure(image=photo_image_sprite)
+            label.image = photo_image_sprite
 
     def _clicked(self, event):
+        """
+        Clicked event callback
+
+        :param event: The tkinter event
+        """
         if self._mode == Modes.ADD and self._mode.has_related_item():
             sprite = self._mode.get_related_item()
 
             # Calculate coords
-            canvasx = self._canvas.canvasx(event.x)
-            canvasy = self._canvas.canvasy(event.y)
-            bbox = self._canvas.bbox(self._canvas.find_closest(canvasx, canvasy))
+            bbox = self._canvas.bbox(tk.CURRENT)
             coords = bbox[0], bbox[1]
 
             # Get the width and height
@@ -187,8 +159,59 @@ class InfiniteCanvas(tk.Frame):
             sprite.resize((width, height))
             photo_image_sprite = sprite.get_photo_image()
 
-            self._canvas.create_image(coords[0], coords[1], image=photo_image_sprite, anchor="nw")
-            self._canvas.placed_images.append(photo_image_sprite)
+            # Label
+            image_label = tk.Label(master=self._canvas, image=photo_image_sprite, borderwidth=0)
+            image_label.image = photo_image_sprite
+            self.bind("<<zoom>>", lambda _: self.resize_image(image_label, sprite), add="+")
+            image_label.pack()
+
+            # Create the image
+            self._canvas.create_window(coords[0], coords[1], window=image_label, anchor="nw")
+
+    # ------------------------- Mode Events ----------------------------- #
+    def _set_drag_mode(self, event):
+        """
+        Set Drag Mode. Used to enable and disable drag events.
+
+        :param event: The tkinter event
+        """
+        # Check whether to activate or deactivate the drag event
+        if str(event.type) == "KeyPress" and self._mode != Modes.ZOOM:
+            self._mode.archive_mode()
+            self._mode.set_mode(Modes.DRAG)
+            self._canvas.config(cursor=self._mode.get_cursor())
+        elif str(event.type) == "KeyRelease":
+            # Reset Drag variables
+            self._mode.unarchive_mode()
+            self._drag_src_coords = (-1, -1)
+            self._canvas.config(cursor=self._mode.get_cursor())
+
+    def _set_zoom_mode(self, event):
+        """
+        Set Drag Mode. Used to enable and disable drag events.
+
+        :param event: The tkinter event
+        """
+        # Check whether to activate or deactivate the zoom event
+        if str(event.type) == "KeyPress" and self._mode != Modes.DRAG:
+            self._mode.archive_mode()
+            self._mode.set_mode(Modes.ZOOM)
+            self._canvas.config(cursor=self._mode.get_cursor())
+        elif str(event.type) == "KeyRelease":
+            # Reset Zoom variables
+            self._mode.unarchive_mode()
+            self._canvas.config(cursor=self._mode.get_cursor())
+
+    def _set_current_mode(self, event):
+        """
+        Set the current mode
+
+        :param event: The tkinter event
+        """
+        if str(event.type) == "Enter":
+            self._canvas.config(cursor=self._mode.get_cursor())
+        elif str(event.type) == "Leave":
+            self._canvas.config(cursor="arrow")
 
     # ----------------------------------- canvas Method ------------------------------------ #
     def _create_canvas(self):
