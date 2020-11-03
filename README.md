@@ -2,6 +2,11 @@
 A basic tilemap created in python using tkinter.
 
 ## Current Version
+### 0.3.1
+- Fixed Image positions in the grid
+    - Just that, and code refactorings.
+
+## Past Versions
 ### 0.3.0
 - Created Add Method for Tiles
     - Uses Labels embedded into the canvas
@@ -11,8 +16,7 @@ A basic tilemap created in python using tkinter.
     - Performance is okay. Quite a lot of visual glitches when zooming or moving though.
     - Putting that under QoL. Not sure how to fix it atm.
     - The added images are just a tiny bit outside the grid, also putting that under QoL.
-
-## Past Versions 
+ 
 ### 0.2.0
 - Created Sprite Importer
     - Uses a file dialog to load the files in.
