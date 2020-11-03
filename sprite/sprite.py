@@ -1,4 +1,5 @@
 from PIL import Image, ImageTk
+from copy import deepcopy
 
 
 class Sprite:
@@ -11,7 +12,10 @@ class Sprite:
         """
         self._original = image
         self.sprite = image
-        self.photo_image = ImageTk.PhotoImage(self.sprite)
+        self.rotation = 0
+
+    def __deepcopy__(self, memodict={}):
+        return Sprite(deepcopy(self._original))
 
     def resize(self, size: tuple):
         """
@@ -20,11 +24,12 @@ class Sprite:
         :param size: The size, (width, height).
         """
         self.sprite = self._original.resize(size)
-        self.photo_image = ImageTk.PhotoImage(self.sprite)
 
     def get_photo_image(self):
-        # return ImageTk.PhotoImage(self.sprite)
-        return self.photo_image
+        return ImageTk.PhotoImage(self.sprite)
 
     def get_size(self):
         return self.sprite.size
+
+    def rotate(self, angle):
+        self.sprite = self.sprite.rotate(angle)

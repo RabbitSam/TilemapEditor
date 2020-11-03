@@ -6,6 +6,7 @@ class Modes(Enum):
     DRAG = auto()
     ZOOM = auto()
     ADD = auto()
+    EDIT = auto()
 
 
 class ModeCursors(Enum):
@@ -13,6 +14,7 @@ class ModeCursors(Enum):
     DRAG = "fleur"
     ZOOM = "arrow"
     ADD = "cross"
+    EDIT = "arrow"
 
 
 class Mode:

@@ -1,7 +1,8 @@
 import tkinter as tk
 import math
 from mode import Modes
-from multiprocessing import Process
+from copy import deepcopy
+from canvas.canvasItem.canvas_image import CanvasImage
 
 
 class InfiniteCanvas(tk.Frame):
@@ -54,7 +55,7 @@ class InfiniteCanvas(tk.Frame):
         self._create_canvas_events()
         self._create_canvas_grid()
 
-    # ------------------------------------ Events --------------------------------------- #
+    # ------------------------------------ Canvas Events --------------------------------------- #
     def _handle_button_motion(self, event):
         """
         Handle button motion events.
@@ -112,61 +113,45 @@ class InfiniteCanvas(tk.Frame):
             # Set the scroll region to within the bbox
             self._canvas.config(scrollregion=self._canvas.bbox(tk.ALL))
 
+            # Recalculate grid size
+            bbox = self._canvas.bbox("ref_rect")
+            self._grid_size = bbox[2] - bbox[0]
+
             # Resize photo images
             self.event_generate("<<zoom>>")
 
-    def resize_image(self, label, sprite):
-        """
-        Resizes the images
-        """
-        # Get the width and height
-        bbox = self._canvas.bbox("ref_rect")
-        width = bbox[2] - bbox[0]
-        height = bbox[3] - bbox[1]
-
-        # Resize the image only if it is viewable and if the photoimage isn't the same size
-        if label.winfo_viewable() and (label.image.width(), label.image.height()) != (width, height):
-            # Resize the sprite only once. Since each tile uses the same sprite instance.
-            if sprite.get_size() != (width, height):
-                sprite.resize((width, height))
-
-            # Get the photo image
-            photo_image_sprite = sprite.get_photo_image()
-
-            # Replace the image
-            label.configure(image=photo_image_sprite)
-            label.image = photo_image_sprite
-
-    def _clicked(self, event):
+    def _handle_add_tile(self, event):
         """
         Clicked event callback
 
         :param event: The tkinter event
         """
         if self._mode == Modes.ADD and self._mode.has_related_item():
-            sprite = self._mode.get_related_item()
-
             # Calculate coords
+            borderwidth = 1
             bbox = self._canvas.bbox(tk.CURRENT)
-            coords = bbox[0], bbox[1]
-
-            # Get the width and height
-            bbox = self._canvas.bbox("ref_rect")
-            width = bbox[2] - bbox[0]
-            height = bbox[3] - bbox[1]
-
-            # Resize the sprite
-            sprite.resize((width, height))
-            photo_image_sprite = sprite.get_photo_image()
+            coords = bbox[0] + borderwidth, bbox[1] + borderwidth
 
             # Label
-            image_label = tk.Label(master=self._canvas, image=photo_image_sprite, borderwidth=0)
-            image_label.image = photo_image_sprite
-            self.bind("<<zoom>>", lambda _: self.resize_image(image_label, sprite), add="+")
+            image_label = CanvasImage(master=self._canvas, sprite=deepcopy(self._mode.get_related_item()),
+                                      width=self._grid_size, height=self._grid_size)
+
+            # Label Events
+            self.bind("<<zoom>>", lambda _: self._zoom_image(image_label), add="+")
             image_label.pack()
 
             # Create the image
             self._canvas.create_window(coords[0], coords[1], window=image_label, anchor="nw")
+
+    # ------------------------------------- Tile Events ---------------------------------- #
+    def _zoom_image(self, label):
+        """
+        Resizes the image
+        """
+        label.zoom_image(self._grid_size)
+
+    def _handle_image_click(self, label, sprite):
+        pass
 
     # ------------------------- Mode Events ----------------------------- #
     def _set_drag_mode(self, event):
@@ -266,7 +251,7 @@ class InfiniteCanvas(tk.Frame):
         self._canvas.bind("<Leave>", self._set_current_mode)
 
         # Mouse Click Events
-        self._canvas.bind("<Button-1>", self._clicked)
+        self._canvas.bind("<Button-1>", self._handle_add_tile)
 
     def _create_canvas_grid(self):
         """

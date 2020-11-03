@@ -5,7 +5,7 @@ from sprite.sprite import Sprite
 from mode import Modes
 
 
-class Menu(tk.Frame):
+class MainMenu(tk.Frame):
     def __init__(self, master=None, mode=None, tile_menu=None):
         """
         Menu. Creates the menu with buttons for importing sprites and setting modes.
