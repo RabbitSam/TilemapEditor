@@ -13,6 +13,7 @@ class Sprite:
         self._original = image
         self.sprite = image
         self.rotation = 0
+        self.ratio = (1, 1)
 
     def __deepcopy__(self, memodict={}):
         return Sprite(deepcopy(self._original))
@@ -23,7 +24,18 @@ class Sprite:
 
         :param size: The size, (width, height).
         """
-        self.sprite = self._original.resize(size)
+        size = list(size)
+        sprite_size = self.get_size()
+        if size[0] <= 0:
+            size[0] = sprite_size[0]
+        if size[1] <= 0:
+            size[1] = sprite_size[1]
+
+        final_size = size
+        self.sprite = self._original.resize(tuple(final_size))
+
+    def snap_to_ratio(self, size):
+        self.resize((size[0] * self.ratio[0], size[1] * self.ratio[1]))
 
     def get_photo_image(self):
         return ImageTk.PhotoImage(self.sprite)
@@ -33,3 +45,13 @@ class Sprite:
 
     def rotate(self, angle):
         self.sprite = self.sprite.rotate(angle)
+
+    def set_ratio(self, ratio):
+        if ratio[0] >= 1 and ratio[1] >= 1:
+            self.ratio = ratio
+
+    def get_ratio(self):
+        return self.ratio
+
+    def reset_ratio(self):
+        self.ratio = (1, 1)

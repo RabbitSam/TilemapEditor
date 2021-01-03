@@ -30,6 +30,9 @@ class MainMenu(tk.Frame):
         button_add = tk.Button(master=self, text="Add Sprite", command=self._add_sprite)
         button_add.grid(row=1, column=0, sticky="WE")
 
+        button_edit = tk.Button(master=self, text="Edit Sprite", command=self._edit_sprite)
+        button_edit.grid(row=2, column=0, sticky="WE")
+
     def _import_sprite(self):
         """
         Import a sprite and render it on the tile menu
@@ -46,3 +49,9 @@ class MainMenu(tk.Frame):
         Set the mode to add sprite
         """
         self.mode.set_mode(Modes.ADD)
+
+    def _edit_sprite(self):
+        """
+        Set the mode to edit sprite
+        """
+        self.mode.set_mode(Modes.EDIT)

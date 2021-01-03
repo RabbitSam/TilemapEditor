@@ -2,11 +2,24 @@
 A basic tilemap created in python using tkinter.
 
 ## Current Version
+### 0.6.1
+- Added Tile Editing Options.
+    - Changed from using Labels to using the canvas
+    - I prefered the label way of doing things, but I feel like it was a little pointless
+    - This change resulted from me being frustrated with a particular bug I kept, but considering how everything has 
+    been implemented, I'm starting to wonder if this was necessary at all.
+    - The current version is kind of missing the sort of kind of optimizations for images when zooming.
+    - But overall I've also been thinking about the number of rectangles generated. I'm not gonna switch from my current
+     way just yet. I don't think it matters, though I'm starting to wonder if I can maintain the grid by switching to a
+     lines and mathematically calculating the location of the item. It will be better on performance.
+     But a lot of my current features depend on rectangles, so maybe if I decide to start anew in the future at some
+     point, I'll consider that.
+
+## Past Versions
 ### 0.3.1
 - Fixed Image positions in the grid
     - Just that, and code refactorings.
 
-## Past Versions
 ### 0.3.0
 - Created Add Method for Tiles
     - Uses Labels embedded into the canvas

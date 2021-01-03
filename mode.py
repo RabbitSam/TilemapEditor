@@ -7,14 +7,16 @@ class Modes(Enum):
     ZOOM = auto()
     ADD = auto()
     EDIT = auto()
+    DELETE = auto()
 
 
 class ModeCursors(Enum):
     DEFAULT = "arrow"
     DRAG = "fleur"
     ZOOM = "arrow"
-    ADD = "cross"
-    EDIT = "arrow"
+    ADD = "plus"
+    EDIT = "hand2"
+    DELETE = "X_cursor"
 
 
 class Mode:
