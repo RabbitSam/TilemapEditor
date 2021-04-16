@@ -41,6 +41,12 @@ class Mode:
         """
         return self.mode == other
 
+    def __str__(self):
+        """
+        Convert to string
+        """
+        return str(self.mode)
+
     # ------------------------------------------------ MODE METHODS -------------------------------------------- #
     def set_mode(self, mode):
         """

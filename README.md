@@ -2,6 +2,27 @@
 A basic tilemap created in python using tkinter.
 
 ## Current Version
+### 0.7.0
+- Redid how the canvas functions
+    - The grid is now mathematical and no longer shows any rectangles.
+        - Adding that visual element to future versions.
+    - Ghosting of an image is used during adding and editing that shows how the image will look after
+    an action is performed.
+- Performance Optimizations for dragging and zooming
+    - Dragging is not as performance heavy anymore.
+    - Zooming is done with some threading which means
+        - The canvas doesn't freeze when there are a large number of tiles and zooming is done.
+        - Instead, the tiles resize just a little slower, I think this is an okay compromise.
+
+## Known Bugs
+### Major
+- No known major bugs as of yet.
+
+### Minor
+- A tile might move away when it is resized below the size of a single grid square from the left/top
+- Ghosting happens on top of the current image, thus making it look a little blurry.
+
+## Past Versions
 ### 0.6.1
 - Added Tile Editing Options.
     - Changed from using Labels to using the canvas
@@ -15,7 +36,6 @@ A basic tilemap created in python using tkinter.
      But a lot of my current features depend on rectangles, so maybe if I decide to start anew in the future at some
      point, I'll consider that.
 
-## Past Versions
 ### 0.3.1
 - Fixed Image positions in the grid
     - Just that, and code refactorings.
@@ -27,7 +47,7 @@ A basic tilemap created in python using tkinter.
     - In the future might look into using just the images
     - But I'll need to manually create a method to ensure that the image is visible.
     - Performance is okay. Quite a lot of visual glitches when zooming or moving though.
-    - Putting that under QoL. Not sure how to fix it atm.
+    - Putting that under QoL. Not sure how to fix it at the moment.
     - The added images are just a tiny bit outside the grid, also putting that under QoL.
  
 ### 0.2.0

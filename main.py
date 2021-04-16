@@ -1,6 +1,7 @@
 import tkinter as tk
 from mode import Mode
 from canvas import infinite_canvas as ic
+from canvas import infinite_canvas2 as ic2
 from menu import tile_menu as tm
 from menu.main_menu import MainMenu
 
@@ -17,7 +18,8 @@ def main():
     left_frame = tk.Frame(master=window)
 
     mode = Mode()
-    canvas = ic.InfiniteCanvas(master=window, mode=mode)
+    # canvas = ic.InfiniteCanvas(master=window, mode=mode)
+    canvas = ic2.InfiniteCanvas2(master=window, mode=mode)
     tile_menu = tm.TileMenu(master=left_frame, mode=mode)
     menu = MainMenu(master=left_frame, mode=mode, tile_menu=tile_menu)
 
