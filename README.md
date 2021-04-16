@@ -21,6 +21,7 @@ A basic tilemap created in python using tkinter.
 ### Minor
 - A tile might move away when it is resized below the size of a single grid square from the left/top
 - Ghosting happens on top of the current image, thus making it look a little blurry.
+- Resize boxes don't move when zooming
 
 ## Past Versions
 ### 0.6.1
