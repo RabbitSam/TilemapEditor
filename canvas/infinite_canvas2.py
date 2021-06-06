@@ -63,6 +63,8 @@ class InfiniteCanvas2(tk.Frame):
                 "alternate": ("left", "right")
             },
         }
+        # Canvas tiles
+        self.__canvas_tiles = {}
 
         # Create Canvas
         self.__create_canvas()
@@ -209,6 +211,11 @@ class InfiniteCanvas2(tk.Frame):
             iid = self.__canvas.create_image(*coords, image=photoimage, anchor=tk.NW)
             self.__canvas.images[iid] = photoimage
 
+            self.__canvas_tiles[iid] = {
+                "sprite": sprite,
+                "rowcol": (coords[0] // self.__grid_size, coords[1] // self.__grid_size)
+            }
+
             self.__create_tile_events(iid, sprite)
 
     def __create_tile_events(self, iid, sprite):
@@ -217,12 +224,6 @@ class InfiniteCanvas2(tk.Frame):
         :param iid: The iid of the tile
         :param sprite: The sprite associated with the tile
         """
-        # Create the event for zooming in on the canvas
-        def move_and_resize_image(event, iid=iid, sprite=sprite):
-            self.__move_and_resize_image(event, iid, sprite)
-
-        self.__canvas.bind("<<zoom>>", move_and_resize_image, add="+")
-
         # Create tile specific events
         def move_tile(event, iid=iid, sprite=sprite):
             self.move_tile(event, iid, sprite)
@@ -276,13 +277,35 @@ class InfiniteCanvas2(tk.Frame):
 
             # If it actually resized then do all the necessary processing
             if self.__grid_size != self.__grid_size_old:
+                self.__delete_resize_boxes()
 
                 self.__csize = self.__grid_size * row_squares, self.__grid_size * col_squares
 
                 self.__canvas.configure(width=self.__csize[0], height=self.__csize[1])
                 self.__canvas.configure(scrollregion=(0, 0, self.__csize[0], self.__csize[1]))
 
-                self.__canvas.event_generate("<<zoom>>")
+                # Resize tiles in threads
+                iids = list(self.__canvas_tiles.keys())
+                length = len(iids)
+                num_groups = 10
+                portion = length//num_groups
+
+                for i in range(1, num_groups + 1):
+                    start = (i - 1) * portion
+                    end = i * portion if i < num_groups else length
+                    group = iids[start:end]
+
+                    tt = ThreadedTask(self.__zoom_tiles, event, group)
+                    tt.start()
+
+    def __zoom_tiles(self, event, group):
+        """
+        Zooms a certain number of tiles (specified by group)
+        :param event: The tkinter event
+        :param group: The group of tile iids
+        """
+        for iid in group:
+            self.__move_and_resize_image(event, iid)
 
     def handle_motion(self, event):
         """
@@ -340,28 +363,34 @@ class InfiniteCanvas2(tk.Frame):
             self.__delete_motion_item()
 
     # -- Canvas Tile Events -- #
-    def __resize_image(self, event, iid, sprite):
+    def __resize_image(self, event, iid):
         """
         Resize image in the canvas to match that of the gridsize of the canvas
         :param event: The event
         :param iid: The id of the image
-        :param sprite: The sprite to resize
         """
-        threaded_task = ThreadedTask(self.__canvas, iid, sprite, self.__grid_size)
-        self.__canvas.after(100, threaded_task.start)
+        # Get sprite
+        sprite = self.__canvas_tiles[iid]["sprite"]
+        # Resize the sprite only if it needs resizing
+        size = sprite.get_size()
+        if size[0] != self.__grid_size or size[1] != self.__grid_size:
+            sprite.resize((self.__grid_size, self.__grid_size))
+            sprite.snap_to_ratio()
 
-    def __move_and_resize_image(self, event, iid, sprite):
+            photoimage = sprite.get_photo_image()
+            self.__canvas.itemconfigure(iid, image=photoimage)
+            self.__canvas.images[iid] = photoimage
+
+    def __move_and_resize_image(self, event, iid):
         """
-        Moves and Resizes an image. This is triggered by the <<zoom>> event.
+        Moves and Resizes an image. For zoom purposes.
         :param event: The tkinter event
         :param iid: The iid of the sprite to move and resize
-        :param sprite: The sprite to move and resize
         """
-        sprite_coords = self.__canvas.coords(iid)
-        factors = sprite_coords[0] // self.__grid_size_old, sprite_coords[1] // self.__grid_size_old
-        new_coords = factors[0] * self.__grid_size, factors[1] * self.__grid_size
+        rowcol = self.__canvas_tiles[iid]["rowcol"]
+        new_coords = rowcol[0] * self.__grid_size, rowcol[1] * self.__grid_size
         self.__canvas.coords(iid, *new_coords)
-        self.__resize_image(event, iid, sprite)
+        self.__resize_image(event, iid)
 
     def __delete_motion_item(self):
         """
@@ -415,6 +444,9 @@ class InfiniteCanvas2(tk.Frame):
             else:
                 gid = self.__candidate_item["iid"]
                 self.__canvas.coords(gid, candidate_coords)
+
+            rowcol = candidate_coords[0] // self.__grid_size, candidate_coords[1] // self.__grid_size
+            self.__canvas_tiles[iid]["rowcol"] = rowcol
 
     def move_tile_complete(self, event, iid, sprite):
         """
@@ -483,12 +515,13 @@ class InfiniteCanvas2(tk.Frame):
         :param iid: The iid of the tile to be selected
         :param sprite: The related sprite
         """
-        self.__selected_item = {
-            "iid": iid,
-            "sprite": sprite
-        }
+        if self.__mode == Modes.EDIT:
+            self.__selected_item = {
+                "iid": iid,
+                "sprite": sprite
+            }
 
-        self.__create_resize_boxes(iid, sprite)
+            self.__create_resize_boxes(iid, sprite)
 
     def __create_resize_boxes(self, iid, sprite):
         """
@@ -627,6 +660,9 @@ class InfiniteCanvas2(tk.Frame):
             self.__canvas.coords(rcid, *nw)
             self.__canvas.images[rcid] = photo_image
 
+        rowcol = self.__canvas.coords(rcid)[0] // self.__grid_size, self.__canvas.coords(rcid)[1] // self.__grid_size
+        self.__canvas_tiles[rcid]["rowcol"] = rowcol
+
     def drag_resize_complete(self, event):
         """
         Called after the drag resizing is done
@@ -668,20 +704,10 @@ class InfiniteCanvas2(tk.Frame):
 
 
 class ThreadedTask(Thread):
-    def __init__(self, canvas, iid, sprite, gridsize):
+    def __init__(self, action, *args):
         super().__init__()
-        self.canvas = canvas
-        self.iid = iid
-        self.sprite = sprite
-        self.gridsize = gridsize
+        self.action = action
+        self.args = args
 
     def run(self):
-        # Resize the sprite only if it needs resizing
-        size = self.sprite.get_size()
-        if size[0] != self.gridsize or size[1] != self.gridsize:
-            self.sprite.resize((self.gridsize, self.gridsize))
-            self.sprite.snap_to_ratio()
-
-            photoimage = self.sprite.get_photo_image()
-            self.canvas.itemconfigure(self.iid, image=photoimage)
-            self.canvas.images[self.iid] = photoimage
+        self.action(*self.args)
